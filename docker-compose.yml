@@ -9,4 +9,8 @@ services:
     volumes:
       - rabbitmqVolume:/var/lib/rabbitmq
 
+  orderService: 
+    container_name: orderService
+    build: services/orderService
+
     

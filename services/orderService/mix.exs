@@ -1,7 +1,6 @@
 defmodule OrderService.MixProject do
   use Mix.Project
 
-  end
 
   def project do
     [
@@ -15,17 +14,19 @@ defmodule OrderService.MixProject do
 
   def application do
     [
-      extra_applications: [:logger],
+      applications: [:amqp],
+      extra_applications: [:logger, :public_key],
       mod: {OrderService.Application, []}
     ]
   end
 
   defp deps do
     [
-      {:rabbitmq_client, "~> 0.1.0"},
-      {:phoenix, "~> 1.5.9"},
+      {:amqp, "~> 3.3"},
       {:jason, "~> 1.0"},
       {:plug_cowboy, "~> 2.0"}
     ]
   end
+
+
 end

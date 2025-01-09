@@ -1,8 +1,8 @@
 defmodule OrderCreator do
-
   use GenServer
 
   @interval 2000
+  @queue_name "orders"
   @customers %{
     "John" => ["strawberries", "watermelon", "bananas"],
     "Alice" => ["smartphone", "laptop", "headphones"],
@@ -11,44 +11,42 @@ defmodule OrderCreator do
     "Emma" => ["novel", "self-help book", "cookbook"]
   }
 
-
   def start_link(_) do
-    GenServer.start_link(__MODULE__, _, name: __MODULE__)
+    # Start the GenServer
+    GenServer.start_link(__MODULE__, :ok, name: __MODULE__)
   end
-
 
   def init(_) do
-    :times.send_interval(@interval , :send_order)
-    {:ok,%{}}
-  end
-
-  def handle_info(:send_order , state) do
-
-
-    # Selecting a random customer
-    customer_names = Map.keys(@customers)
-    random_index = :rand.uniform(length(customer_names)) - 1
-    random_customer = Enum.at(customer_names, random_index)
-
-    # Selecting a random product from his list
-    random_index = :rand.uniform(length(customer_names)) - 1
-    selected_product = Enum.at(@customers[random_customer] , random_index)
-
-    # Connect to RabbitMQ and publish the order
+    # Connect to RabbitMQ
     {:ok, connection} = AMQP.Connection.open()
     {:ok, channel} = AMQP.Channel.open(connection)
 
-    AMQP.Queue.declare(channel, "orders")
-    AMQP.Basic.publish(channel, "", "orders", "#{random_customer} ordered #{selected_product}")
+    # Declare the queue "orders"
+    AMQP.Queue.declare(channel, @queue_name)
 
-    # Close the channel and connection
-    AMQP.Channel.close(channel)
-    AMQP.Connection.close(connection)
+    # Schedule the first order
+    Process.send(self(), :send_order, [])
 
+    {:ok, %{rabbitmq: {connection, channel}}}
+  end
 
-    IO.puts("Random customer: #{random_customer}")
+  # Sends an order to the RabbitMQ queue
+  def handle_info(:send_order, %{rabbitmq: {_connection, channel}} = state) do
+    # Selecting a random customer
+    customer_names = Map.keys(@customers)
+    random_customer = Enum.random(customer_names)
+
+    # Selecting a random product from the customer's list
+    selected_product = Enum.random(@customers[random_customer])
+
+    # Publish the order to the "orders" queue
+    AMQP.Basic.publish(channel, "", @queue_name, "#{random_customer} ordered #{selected_product}")
+    IO.puts("#{random_customer} ordered #{selected_product}")
+
+    # Schedule the next order
+    Process.send_after(self(), :send_order, @interval)
+
     {:noreply, state}
-
   end
 
 end

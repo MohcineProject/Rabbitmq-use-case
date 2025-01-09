@@ -1,0 +1,26 @@
+# Getting the elixir image
+FROM elixir:latest 
+
+# Install the hex package manager 
+RUN mix local.hex --force 
+
+# Install rebar for erlang projects 
+RUN mix local.rebar --force 
+
+# Changing the working directory 
+WORKDIR /app 
+
+# Copying the mix script and mix.lock
+COPY mix.exs mix.lock ./ 
+
+# Installing the dependencies 
+RUN mix deps.get 
+
+# Copy the rest of the folder 
+COPY . . 
+
+# Compile the project 
+RUN mix compile 
+
+# Run the project 
+CMD ["mix" , "run"]
