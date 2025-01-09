@@ -1,0 +1,12 @@
+services:
+
+  rabbitmq:
+    container_name: rabbitmq
+    build: services/rabbitmqService
+    ports: 
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmqVolume:/var/lib/rabbitmq
+
+    
