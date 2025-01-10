@@ -1,0 +1,18 @@
+# Get the RabbitMQ image from the Docker Hub
+FROM rabbitmq:management
+
+# Set the working directory
+WORKDIR /etc/rabbitmq
+
+# Copy the RabbitMQ configuration and plugins
+COPY rabbitmq.conf /etc/rabbitmq/rabbitmq.conf
+COPY enabled_plugins /etc/rabbitmq/enabled_plugins
+
+# Enable RabbitMQ management plugin
+RUN rabbitmq-plugins enable rabbitmq_management
+
+# Expose the ports
+EXPOSE 5672 15672
+
+# Start the RabbitMQ server
+CMD ["rabbitmq-server"]

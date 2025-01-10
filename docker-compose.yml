@@ -1,16 +1,42 @@
-services:
 
+services:
   rabbitmq:
     container_name: rabbitmq
-    build: services/rabbitmqService
-    ports: 
+    image: rabbitmq
+    build:
+      context: services/rabbitmqService
+      dockerfile: dockerfile
+    ports:
       - "5672:5672"
       - "15672:15672"
     volumes:
-      - rabbitmqVolume:/var/lib/rabbitmq
+      - ./services/rabbitmqService/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+     # - ./services/rabbitmqService/enabled_plugins:/etc/rabbitmq/enabled_plugins
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 1m30s
+      timeout: 20s
+      retries: 5
+      start_period: 1m
+    networks:
+      - docker_network
 
-  orderService: 
-    container_name: orderService
-    build: services/orderService
+  order-service: 
+    container_name: order-service
+    image: order-service
+    build: 
+      context: services/orderService
+      dockerfile: dockerfile
+    depends_on:
+      - rabbitmq
+    networks:
+      - docker_network
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USERNAME=order
+      - RABBITMQ_PASSWORD=order
 
-    
+networks: 
+  docker_network:
+    driver: bridge

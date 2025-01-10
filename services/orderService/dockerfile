@@ -22,5 +22,5 @@ COPY . .
 # Compile the project 
 RUN mix compile 
 
-# Run the project 
-CMD ["mix" , "run"]
+# Run the application and keep it alive
+CMD ["mix", "run", "--no-halt"]
