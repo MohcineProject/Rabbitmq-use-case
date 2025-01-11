@@ -34,11 +34,10 @@ defmodule OrderCreator do
           {:ok, channel} ->
             IO.puts("Channel opened!")
             AMQP.Queue.declare(channel, @queue_name, durable: true, arguments: [
-              {"x-ha-policy", :longstr, "all"},
-              {"x-ha-sync-mode", :longstr, "automatic"},
-              {"x-ha-promote-on-shutdown", :longstr, "always"},
-              {"x-ha-promote-on-failure", :longstr, "always"}
+              {"x-queue-type", :longstr, "quorum"}
             ])
+
+
 
             # Schedule the first order
             Process.send(self(), :send_order, [])

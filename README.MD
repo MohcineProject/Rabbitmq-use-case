@@ -23,27 +23,27 @@ This command will build all the microservices images and run the the containers.
 
 ## Messaging Queues
 
-**Explanation**:
+### **Explanation**:
 
-RabbitMQ supports the use of messaging queues, enabling **asynchronous communication** between microservices. This means that a consumer can delay processing a message until it’s ready, without impacting the producer, which does not have to wait for a response.
+RabbitMQ supports the use of messaging queues, enabling **asynchronous communication** between microservices. This means that a consumer can delay processing a message until it is ready, without impacting the producer, which does not need to wait for a response.
 
 It also helps with **load balancing**, as **multiple consumers** can pull messages from the queue, preventing any single service from being overwhelmed. This reduces the burden on microservices by allowing them to handle tasks at their own pace, leading to more efficient resource usage and better fault tolerance.
 
-In addition to that, we can implement an **acknowledgment mechanism** in RabbitMQ. This ensures that when a consumer receives a message, the message remains in the queue, waiting for the acknowledgment (ack) signal from the consumer. The consumer typically sends the ack message once it has finished processing the task. This allows messages to persist in the queue until the consumer has confirmed successful processing.
+Additionally, RabbitMQ implements an **acknowledgment mechanism**. This ensures that when a consumer receives a message, the message remains in the queue, waiting for the acknowledgment (ack) signal from the consumer. The consumer typically sends the ack message once it has finished processing the task. This allows messages to persist in the queue until the consumer has confirmed successful processing.
 
-Futhermore, the queues can be made **durable**. This functionnality make it possible to persist queues declaration even if the rabbitmq server restarted. Moreover, messages can be marqued as **persistent**, which signals rabbitmq to write them in the disk memory. This approach saves the message from being lost if the rabbitmq service went down. However they came with their own tradeoffs such as increased latency because of the I/O operations to the disk, the messages are not saved the memory immediately since rabbitmq and they can be lost if the service failed before that. 
+Furthermore, queues can be made **durable**, meaning that their declaration persists even if the RabbitMQ server is restarted. Additionally, messages can be marked as **persistent**, signaling RabbitMQ to write them to disk memory. This approach ensures that messages are not lost if the RabbitMQ service goes down. However, this comes with trade-offs, such as increased latency due to I/O operations to disk. The messages are not immediately saved to memory, and they could be lost if the service fails before the write occurs.
 
-**Example in Code**:
+### **Example in Code**:
 
-In this example, we have two instances of the inventory service running. **They share the same queue to receive messages from the order service**. We can think of these instances as nodes in a distributed database, for example. This setup allows our inventory service to **scale horizontally**, supporting more requests.
+In this example, we have two instances of the inventory service running. **They share the same queue to receive messages from the order service**. We can think of these instances as nodes in a distributed database. This setup allows the inventory service to **scale horizontally**, supporting more requests.
 
 Another important element is that in the inventory service, **we can control when we consume a message**, preventing the service from becoming overloaded, which ultimately improves fault tolerance.
 
-Additionaly, we’ve added the **acknowledgment feature** of RabbitMQ. When a consumer receives a message, RabbitMQ does not delete it from the queue immediately. Instead, the message is marked as "in progress," making it unavailable to other consumers (e.g., the second service). It will remain in the queue until the acknowledgment is received. If the consumer that received the message crashes, for instance, and the connection is lost, RabbitMQ will re-publish the message to the queue, allowing another consumer to process it.
+Additionally, we’ve incorporated the **acknowledgment feature** of RabbitMQ. When a consumer receives a message, RabbitMQ does not delete it from the queue immediately. Instead, the message is marked as "in progress," making it unavailable to other consumers (e.g., the second service). It will remain in the queue until the acknowledgment is received. If the consumer that received the message crashes or the connection is lost, RabbitMQ will re-publish the message to the queue, allowing another consumer to process it.
 
-Finally, we have implemented **durable queues** and **persistent messages** in the simulation. This means that there is no need to redeclare the queues if the service is restarted, which can be verified by accessing the management UI. Furthermore, the persistent messages can be seen by accessing the container and naviguating to rabbitmq storage files. 
+Finally, we have implemented **durable queues** and **persistent messages** in the simulation. This means there is no need to redeclare the queues if the service is restarted, which can be verified by accessing the management UI. Furthermore, the persistent messages can be seen by accessing the container and navigating to RabbitMQ's storage files.
 
-To test this elements, first access the command line of the rabbitmq container using the following : 
+To test these elements, first access the command line of the RabbitMQ container using the following:
 
 ```sh
 docker exec -it rabbitmq /bin/bash
@@ -68,33 +68,38 @@ rabbitmqctl start_app
 ```
 Verify in the management UI, and you will find the queues and the messages still available. 
 
-## Cluster of running services 
+## Cluster of Running Services
 
 **Explanation**:
 
-Rabbitmq also supports clustering. Meaning that the service can run in multiple nodes. This follows the bases of the erlang virtual machines designed for distributed systems, where we have multiple nodes that can be distributed among different machines and establish connections between them. 
+RabbitMQ also supports **clustering**, meaning that the service can run on multiple nodes. This is based on the principles of the Erlang virtual machines, which are designed for distributed systems. Multiple nodes can be distributed across different machines and establish connections with each other.
 
-From the client perspective, he can establish a connection to a first node and then if it goes down, he can try to reconnect to other replicas. This way, by configuring the client side to retry connection to other nodes in the rabbitmq cluster, the reliability of the message brocker is increased. 
+From the client perspective, it can establish a connection to the first node. If this node goes down, the client can attempt to reconnect to other **replicas**. By configuring the client to retry connections to other nodes in the RabbitMQ cluster, the reliability of the message broker is increased.
 
-We can also declare **mirrored queues**, to duplicate messages from a queue in a node to queues in other nodes. This way we ensure that if the rabbitmq main service went down, information is not lost since we can connect to other replicate services. 
+We can also declare **Quorum Queues** to replicate messages from a queue on one node to queues on other nodes. This type of queue uses the Raft consensus protocol, where the system relies on the majority of nodes (also known as a quorum) to guarantee consistency in the replicated messages. This feature adds the constraint that for a quorum queue replicated across n nodes, we need at least n/2 + 1 functional nodes in the cluster for the queue to be accessible. This type of queue is ideal for data consistency and availability.
 
 **Example in Code**:
 
-In our example we have set three containers of rabbitmq. The order and the inventory services are set to connect to the main node, the **rabbitmq** container. If this container is down ( you can turn it off in docker ), they will try to reconnect to the first duplicate, the container **rabbitmq-duplicate-1**. In its turn, if it is down, they will reconnect to the final duplicate. We can see that this feature of rabbitmq increases significantly its availability, and the message brocker is still available even after some nodes are down. 
+In our example, we have three RabbitMQ containers. The **order** and **inventory** services are set to connect to the main node, the **rabbitmq** container. If this container goes down (you can turn it off in Docker), the services will attempt to reconnect to the first replica, **rabbitmq-duplicate-1**. If that node goes down as well, they will reconnect to the final replica. This feature of RabbitMQ significantly increases its availability, allowing the message broker to remain functional even when some nodes are down.
 
-We have also applied **mirrored queues** to replicate messages among the nodes of the cluster. This is very helpfyl in case the inventory switched to another node in the cluster since it will find the same queues along with the non consumed messages. 
+We have also applied **Quorum Queues** to replicate messages across the nodes in the cluster. This is particularly helpful in cases where the inventory service switches to another node in the cluster, as it will find the same queues with any unconsumed messages.
 
-In order to view this functionnality, you can access a replicate node terminal, for example : 
+***IMPORTANT NOTE***
+
+Since the quorum queue is replicated across three nodes in the RabbitMQ cluster, we must have at least 2 functional nodes for the queue to be available. It is possible to remove this constraint using another feature called **mirrored queues**, but they come with their own trade-offs, particularly in terms of consistency, and are no longer supported in recent versions of RabbitMQ.
+
+To view this functionality, you can access a replicated node's terminal, for example:
 
 ```sh
 docker exec -it rabbitmq-duplicate-1 /bin/bash
 ```
 
-And then enable management UI : 
+Then, enable the management UI:
 
 ```sh
 rabbitmq-plugins enable rabbitmq_management
 ```
 
+Next, stop the inventory services so that the queue on the primary node stores some messages. Afterward, you can check the state of the duplicate node. You will see that all the messages are forwarded to its own queue!
 
-And then stop the inventory services so that queue on the primary node stores some messages, and visualize the state of the duplicate node, you will see that all the messages are forwared to its own queue ! 
+You can then stop the rabbitmq container, and you will notice that the order and inventory services switch to another replica, with the system remaining functional
