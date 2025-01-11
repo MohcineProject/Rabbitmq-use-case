@@ -15,7 +15,7 @@ defmodule OrderService.MixProject do
   def application do
     [
       applications: [:amqp],
-      extra_applications: [:logger, :public_key],
+      extra_applications: [ :public_key],
       mod: {OrderService.Application, []}
     ]
   end
@@ -23,8 +23,6 @@ defmodule OrderService.MixProject do
   defp deps do
     [
       {:amqp, "~> 3.3"},
-      {:jason, "~> 1.0"},
-      {:plug_cowboy, "~> 2.0"}
     ]
   end
 

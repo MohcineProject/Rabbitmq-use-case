@@ -1,0 +1,23 @@
+# Use a minimal Go image
+FROM golang:latest
+
+# Set the working directory
+WORKDIR /app
+
+# Copy the Go module files
+COPY go.mod go.sum ./
+
+# Download dependencies
+RUN go mod download
+
+# Copy the application source code
+COPY . .
+
+# Build the application
+RUN go build -o inventory-service
+
+# Expose the application port (if necessary)
+EXPOSE 8080
+
+# Run the application
+CMD ["./inventory-service"]

@@ -1,5 +1,5 @@
 # Getting the elixir image
-FROM elixir:latest 
+FROM elixir:1.14 
 
 # Install the hex package manager 
 RUN mix local.hex --force 
