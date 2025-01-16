@@ -1,3 +1,0 @@
-defmodule FraudDetectorService do
-
-end

@@ -5,10 +5,10 @@ defmodule FraudDetectionApplication do
 
   def start(_type, _args) do
     children = [
-      OrderCreator
+      FraudDetectorService
     ]
 
-    opts = [strategy: :one_for_one, name: OrderService.Supervisor]
+    opts = [strategy: :one_for_one, name: FraudDetectorService.Supervisor]
     Supervisor.start_link(children, opts)
   end
 
